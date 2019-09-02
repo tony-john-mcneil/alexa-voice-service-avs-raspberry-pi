@@ -1,9 +1,9 @@
 # Ubuntu Instructions for Alexa Voice Service Raspberry PI 3 purchashed 2017
 
 This write-up is primarliy based on the guide here:
-https://developer.amazon.com/docs/alexa-voice-service/register-a-product.html
+https://developer.amazon.com/docs/alexa-voice-service/required-hardware.html
 
-_Downloaded: 2018-11-13-raspbian-stretch-lite.zip_
+_I downloaded: 2018-11-13-raspbian-stretch-lite.zip_
 
 Get your microSD card connected to your linux machine.
 
