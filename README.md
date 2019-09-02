@@ -785,7 +785,6 @@ Boost install steps:
 sudo apt install libboost-all-dev
 ```
 
-TODO: supply the serial communication sketch for arduino
 TODO: supply a test c++ program for testing the serial communication
 
 The following guide has been adapted to use boost communicating with an arduino via serial:
