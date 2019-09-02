@@ -591,6 +591,7 @@ Now enable the service and reboot your pi to ensure the sample app starts:
 
 ```
 sudo systemctl enable alexa-pi.service
+```
 
 Reboot:
 
