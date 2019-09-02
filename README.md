@@ -1,4 +1,4 @@
-# Ubuntu Instructions for Alexa Voice Service RpiZeroW purchashed late 2018
+# Ubuntu Instructions for Alexa Voice Service Raspberry PI 3 purchashed 2017
 
 This write-up is primarliy based on the guide here:
 https://developer.amazon.com/docs/alexa-voice-service/register-a-product.html
@@ -43,9 +43,9 @@ Example output:
 
 ```
 ...snip..
-sda                             8:0    1  29.7G  0 disk
-├─sda1                          8:1    1  43.9M  0 part  /media/t/boot
-└─sda2                          8:2    1  29.7G  0 part  /media/t/rootfs
+sdX                             8:0    1  29.7G  0 disk
+├─sdX1                          8:1    1  43.9M  0 part  /media/t/boot
+└─sdX2                          8:2    1  29.7G  0 part  /media/t/rootfs
 ...snip...
 ```
 
@@ -56,7 +56,7 @@ umount /dev/sdX1
 umount /dev/sdX2
 ```
 
-Write the image to sdcard NOTE: use "sda" from above without the numbers for the partitions
+Write the image to sdcard NOTE: use "sdX" from above without the numbers for the partitions
 
 ```
 sudo dd bs=4M if=2018-11-13-raspbian-stretch-lite.img of=/dev/sdX
@@ -83,8 +83,8 @@ sudo nano /media/t/boot/wpa_supplicant.conf
 
 _/media/t above is where the sdcard got mounted to_
 
-Example content (for normal Pi, PiZero variation in the next example) for configuring 2 networks, 1 on a home router and the other for a phone so
-you can take the project mobile and show off:
+Example content (for normal Pi, PiZero variation in the next example) for configuring 2 networks, 1 on a home router and the other for a phone 
+WiFi hot-spot so you can take the project mobile and show off:
 
 ```
 country=AU
@@ -190,7 +190,7 @@ sudo shutdown -t now
 
 Remove the sd from pi and connect to computer 
 
-Note the mounted folder and device (by running 'mount') and un-mount them e.g.
+Note the mounted folder and device (by running 'mount') and then un-mount them e.g.
 
 ```sh
 sudo umount /media/t/boot
@@ -203,8 +203,7 @@ Make a backup (this will take a while):
 sudo dd bs=4M if=/dev/sdX | gzip > ~/Projects/AWS/AlexaVoiceServicePi/backup-image-`date +%Y%m%d%H%M`.gz
 ```
 
-sudo dd bs=4M oflag=direct status=progress if=/dev/sdb | gzip > ~/Projects/AWS/AlexaVoiceServicePi/backup-image-`date +%Y%m%d%H%M`.gz
-
+No output can make you nervous the longer the process takes so you can try adding the status=progress param to the dd command.
 
 Go have a coffee or beer, or to monitor the size of the backup being generated you can open a new terminal windows and execute:
 
@@ -226,6 +225,8 @@ _Depending on your system the dd command will have options to show progress, on 
 may differ on your system_
 
 ## Perform installs of extra software + build project
+
+Once the sd card is back in the Pi, start it up and loginOnce the sd card is back in the Pi, start it up and login.
 
 Setup the previoulsy downloaded config (prompts will wait for input during setup):
 
@@ -352,10 +353,12 @@ doco: https://alsa-project.org/wiki/Asoundrc
 
 If you have a bluetooth speaker then the following page might help:
 https://www.sigmdel.ca/michel/ha/rpi/bluetooth_02_en.html
-(I ended up performing the bluetooth config process for a bluetooth speaker. At one stage I had a combined usb speaker / mic
-hardware I salvaged from a skype speaker+mic device which I also had working but not documented here. My .asoundrc config for
-this is down in the APPENDIX section at the bottom of this article)
+(I ended up performing the bluetooth config process for a bluetooth speaker that I purchased from Kmart for $10 AUD. 
+I had a combined usb speaker / mic hardware I salvaged from a skype speaker+mic device, so I've included both configs for 
+reference in this README. My .asoundrc config for these is down in the APPENDIX section at the bottom of this README)
 
+
+Some install / config I had to perform for the Bluetooth speaker here:
 
 ```
 mkdir ~/temp
@@ -379,7 +382,7 @@ sudo cp /etc/dbus-1/system.d/bluetooth.conf /etc/dbus-1/system.d/bluetooth.conf.
 sudo nano /etc/dbus-1/system.d/bluetooth.conf
 ```
 
-Contents should be (blindly copied from the above mentioned bluetooth tutorial, I understand the bluetooth group permission at least)
+Contents of bluetooth.conf was blindly copied from the above mentioned bluetooth tutorial, I understand the bluetooth group permission at least:
 
 ```
 <!-- This configuration file specifies the required security policies
@@ -552,7 +555,6 @@ NOTE: Currently there is a bug starting the SampleApp as a background service. T
 to ~/avs-device-sdk/SampleApp/src/UserInputManager.cpp
 The new code is between START NEW CODE ... END NEW CODE (which effectivly disables the user keyboard input detection in the sample)
 
-
 ```
   SampleAppReturnCode UserInputManager::run() {
       bool userTriggeredLogout = false;
@@ -653,7 +655,7 @@ https://developer.amazon.com/docs/alexa-voice-service/indicate-device-state-with
 Adding the device state indicator was pretty straight forward.
 
 
-Adding lighting effects coorosponding to the Alexa state.
+Adding lighting effects corresponding to the Alexa state.
 ----------------------------------------------------------
 
 I have connected an arduino to the PI via USB. The Arduino has individually addressable leds wired to it that are controlled
@@ -666,320 +668,11 @@ serial single character code is used to signal the PI if the button is held down
 Here is the Arduino code for reference:
 _TODO: I should expand of the whole setup (i.e. wiring and theory) but just referencing the code here for now._
 
-```
-#include <FastLED.h>
-#include <Bounce2.h>
+The arduino code is in the WOPRleds.ino file (should be in the repository next to this README)
 
-#define SHUTDOWN_BUTTON_PIN 2
-#define SHUTDOWN_PIEZO_PIN 11
-#define SHUTDOWN_BUTTON_INTERVAL_MILLIS 3000
-#define SHUTDOWN_BUZZ_MILLIS 500
-#define SHUTDOWN_BUZZ_TONE 1000
-#define SHUTDOWN_TIMEOUT_MILLIS 10000
-#define STATE_SHUTDOWN 'D'
+To send commands to the arduino via serial, on the raspberry pi I have modified: ~/avs-device-sdk/SampleApp/src/UIManager.cpp 
 
-#define NUM_RAIL_STRIPS 2
-#define NUM_LEDS_PER_RAIL_STRIP 16
-
-#define NUM_EYES_STRIPS 1
-#define NUM_LEDS_PER_EYES_STRIP 3
-
-#define LED_BRIGHTNESS 22
-#define LED_ON_OFF_RND_RANGE 100
-
-#define LED_PROCESSING_DELAY_MILLIS 125
-#define LED_LISTEN_DELAY_MILLIS 250
-
-#define RAIL_1_STRIP_PIN 12
-#define RAIL_2_STRIP_PIN 13
-#define EYES_1_STRIP_PIN 10
-
-#define SATE_UNASSIGNED '-'
-
-#define STATE_IDLE 'I'
-#define NUM_IDLE_COLORS 2
-CRGB::HTMLColorCode woprProcessingColors[NUM_IDLE_COLORS] = {CRGB::Red, CRGB::Orange};
-
-#define STATE_ALEXA_ERROR 'E'
-#define STATE_ALEXA_SPEAKING 'S'
-#define LED_PULSE_DELAY_MILLIS 2
-int pluseAdjustmentStepCount = 0;
-int pulseAdjustmentDirection = -1; // start by adjusting down
-CRGB speakingBaseColor = CRGB::Blue;
-CRGB errorBaseColor = CRGB::Red;
-
-#define STATE_ALEXA_THINKING 'T'
-#define STATE_ALEXA_LISTENING 'L'
-#define NUM_LISTEN_COLORS 3
-CRGB::HTMLColorCode woprBlueColors[NUM_LISTEN_COLORS] = {CRGB::Blue, CRGB::Aqua, CRGB::Azure};
-
-CRGB ledRail[NUM_RAIL_STRIPS][NUM_LEDS_PER_RAIL_STRIP];
-CRGB ledEyes[NUM_EYES_STRIPS][NUM_LEDS_PER_EYES_STRIP];
-
-char currentState;
-char lastState;
-
-// Instantiate a Bounce object for shutdown button
-Bounce shutdownDebouncer = Bounce(); 
-
-void setup() {
-  // Setup the shutdown button with an internal pull-up and attach shutdownDebouncer with time interval:
-  pinMode(SHUTDOWN_BUTTON_PIN,INPUT_PULLUP);
-  shutdownDebouncer.attach(SHUTDOWN_BUTTON_PIN);
-  shutdownDebouncer.interval(SHUTDOWN_BUTTON_INTERVAL_MILLIS);
-  pinMode(SHUTDOWN_PIEZO_PIN, OUTPUT); // for shutdown sound
-  
-  FastLED.addLeds<NEOPIXEL, RAIL_1_STRIP_PIN>(ledRail[0], NUM_LEDS_PER_RAIL_STRIP);
-  FastLED.addLeds<NEOPIXEL, RAIL_2_STRIP_PIN>(ledRail[1], NUM_LEDS_PER_RAIL_STRIP);
-  FastLED.addLeds<NEOPIXEL, EYES_1_STRIP_PIN>(ledEyes[0], NUM_LEDS_PER_EYES_STRIP);
-  LEDS.setBrightness(LED_BRIGHTNESS);
-  currentState = SATE_UNASSIGNED;
-  lastState = SATE_UNASSIGNED;
-
-  Serial.begin(9600);
-}
-
-void loop() {
-  handleSerial();
-  handleShutdown();
-
-  switch (currentState) {
-    case STATE_IDLE:
-      woprStandbyLights();
-      break;
-    case STATE_ALEXA_LISTENING:
-      if (lastState != currentState) {
-        alexaListenLights();
-      }
-      break;
-    case STATE_ALEXA_THINKING:
-      // set the lights for thinking
-      alexaThinkingLights();
-      break;
-    case STATE_ALEXA_SPEAKING:
-      if (lastState != currentState) {
-        allLightsTo(speakingBaseColor);
-      }
-      alexaSpeakingLights();
-      break;
-    case STATE_ALEXA_ERROR:
-      if (lastState != currentState) {
-        allLightsTo(errorBaseColor);
-      }
-      alexaErrorLights();
-      break;
-    case SATE_UNASSIGNED:
-      allLightsTo(CRGB::Black);
-      break;
-  }
-
-  lastState = currentState;
-}
-
-void handleShutdown() {
-  shutdownDebouncer.update();
-  // Turn on the LED if either button is pressed :
-  if (shutdownDebouncer.read() == HIGH) {
-    tone(SHUTDOWN_PIEZO_PIN, SHUTDOWN_BUZZ_TONE);
-    delay(SHUTDOWN_BUZZ_MILLIS);       
-    noTone(SHUTDOWN_PIEZO_PIN);
-    Serial.write(STATE_SHUTDOWN); // send shutdown command over serial
-    delay(SHUTDOWN_TIMEOUT_MILLIS); // set a delay to wait for shutdown (i.e. back to normal if shutdown doesn't occur)
-  }
-}
-
-void handleSerial() {
-  while (Serial.available() > 0) {
-    char incomingCharacter = Serial.read();
-    switch (incomingCharacter) {
-      case STATE_IDLE:
-      case STATE_ALEXA_LISTENING:
-      case STATE_ALEXA_THINKING:
-      case STATE_ALEXA_SPEAKING:
-      case STATE_ALEXA_ERROR:
-        currentState = incomingCharacter;
-        break;
-      default:
-        currentState = SATE_UNASSIGNED;
-        break;
-    }
-  }
-}
-
-void alexaSpeakingLights() {
-  // for each strip
-  for (int x = 0; x < NUM_RAIL_STRIPS; x++) {
-    // for each led in rail strip
-    for (int i = 0; i < NUM_LEDS_PER_RAIL_STRIP; i++) {
-      if (pulseAdjustmentDirection == -1) {
-        ledRail[x][i] += CHSV(0, 1, 1);
-      } else {
-        ledRail[x][i] -= CHSV(0, 1, 1);
-      }
-    }
-  }
-
-  for (int x = 0; x < NUM_EYES_STRIPS; x++) {
-    // for each led in eyes strip
-    for (int i = 0; i < NUM_LEDS_PER_EYES_STRIP; i++) {
-      if (pulseAdjustmentDirection == -1) {
-        ledEyes[x][i] += CHSV(0, 1, 1);
-      } else {
-        ledEyes[x][i] -= CHSV(0, 1, 1);
-      }
-    }
-  }
-  
-  pluseAdjustmentStepCount++;
-  if (pluseAdjustmentStepCount >= 200) {
-    pluseAdjustmentStepCount = 0;
-    pulseAdjustmentDirection *= -1;
-  }
-
-  FastLED.show();
-  FastLED.delay(LED_PULSE_DELAY_MILLIS);
-}
-
-void alexaThinkingLights() {
-  // for each rail strip
-  for (int x = 0; x < NUM_RAIL_STRIPS; x++) {
-    // for each led in rail strip
-    for (int i = 0; i < NUM_LEDS_PER_RAIL_STRIP; i++) {
-      if (random8(100) > 40) {
-        // switching current rail led on
-        ledRail[x][i] = woprBlueColors[random8(NUM_LISTEN_COLORS)];
-      } else {
-        // switch rail led off
-        ledRail[x][i] = CRGB::Black;
-      }
-    }
-  }
-
-  // for each eyes strip
-  for (int x = 0; x < NUM_EYES_STRIPS; x++) {
-    // for each led in eyes strip
-    for (int i = 0; i < NUM_LEDS_PER_EYES_STRIP; i++) {
-      if (random8(100) > 40) {
-        // switching current eyes led on
-        ledEyes[x][i] = woprBlueColors[random8(NUM_LISTEN_COLORS)];
-      } else {
-        // switch eyes led off
-        ledEyes[x][i] = CRGB::Black;
-      }
-    }
-  }
-  
-  FastLED.show();
-  FastLED.delay(LED_PROCESSING_DELAY_MILLIS);
-}
-
-void alexaErrorLights() {
-  // for each strip
-  for (int x = 0; x < NUM_RAIL_STRIPS; x++) {
-    // for each led in rail strip
-    for (int i = 0; i < NUM_LEDS_PER_RAIL_STRIP; i++) {
-      if (pulseAdjustmentDirection == -1) {
-        ledRail[x][i] += CHSV(0, 1, 1);
-      } else {
-        ledRail[x][i] -= CHSV(0, 1, 1);
-      }
-    }
-  }
-
-  for (int x = 0; x < NUM_EYES_STRIPS; x++) {
-    // for each led in eyes strip
-    for (int i = 0; i < NUM_LEDS_PER_EYES_STRIP; i++) {
-      if (pulseAdjustmentDirection == -1) {
-        ledEyes[x][i] += CHSV(0, 1, 1);
-      } else {
-        ledEyes[x][i] -= CHSV(0, 1, 1);
-      }
-    }
-  }
-  
-  pluseAdjustmentStepCount++;
-  if (pluseAdjustmentStepCount >= 200) {
-    pluseAdjustmentStepCount = 0;
-    pulseAdjustmentDirection *= -1;
-  }
-
-  FastLED.show();
-  FastLED.delay(LED_PULSE_DELAY_MILLIS);
-}
-
-void alexaListenLights() {
-  // for each rail strip
-  for (int x = 0; x < NUM_RAIL_STRIPS; x++) {
-    // for each led in rail strip
-    for (int i = 0; i < NUM_LEDS_PER_RAIL_STRIP; i++) {
-      // switching current rail led on
-      ledRail[x][i] = woprBlueColors[random8(NUM_LISTEN_COLORS)];
-    }
-  }
-
-  // for each eyes strip
-  for (int x = 0; x < NUM_EYES_STRIPS; x++) {
-    // for each led in eye strip
-    for (int i = 0; i < NUM_LEDS_PER_EYES_STRIP; i++) {
-      // switching current eyes led on
-      ledEyes[x][i] = woprBlueColors[random8(NUM_LISTEN_COLORS)];
-    }
-  }
-  
-  FastLED.show();
-}
-
-void woprStandbyLights() {
-  // for each rail strip
-  for (int x = 0; x < NUM_RAIL_STRIPS; x++) {
-    // for each led in rail strip
-    for (int i = 0; i < NUM_LEDS_PER_RAIL_STRIP; i++) {
-      if (random8(100) > 40) {
-        // switching current rail led on
-        ledRail[x][i] = woprProcessingColors[random8(NUM_IDLE_COLORS)];
-      } else {
-        // switch rail led off
-        ledRail[x][i] = CRGB::Black;
-      }
-    }
-  }
-
-  // for each eyes strip
-  for (int x = 0; x < NUM_EYES_STRIPS; x++) {
-    // for each led in eyes strip
-    for (int i = 0; i < NUM_LEDS_PER_EYES_STRIP; i++) {
-      if (random8(100) > 40) {
-        // switching current eyes led on
-        ledEyes[x][i] = woprProcessingColors[random8(NUM_IDLE_COLORS)];
-      } else {
-        // switch eyes led off
-        ledEyes[x][i] = CRGB::Black;
-      }
-    }
-  }
-  
-  FastLED.show();
-  FastLED.delay(LED_PROCESSING_DELAY_MILLIS);
-}
-
-void allLightsTo(CRGB color) {
-  // for each rail strip
-  for (int x = 0; x < NUM_RAIL_STRIPS; x++) {
-    fill_solid(ledRail[x], NUM_LEDS_PER_RAIL_STRIP, color);
-  }
-
-  // for each eyes strip
-  for (int x = 0; x < NUM_EYES_STRIPS; x++) {
-    fill_solid(ledEyes[x], NUM_LEDS_PER_EYES_STRIP, color);
-  }
-  FastLED.show();
-}
-
-```
-
-On the raspberry pi I have modified: ~/avs-device-sdk/SampleApp/src/UIManager.cpp 
-
-Adding the system shell calls to send data to the arduino connected via serial, here is 
+Adding the system(...) shell calls to send data to the arduino connected via serial, here is 
 the full printState() method after modification:
 
 ```
@@ -993,23 +686,23 @@ void UIManager::printState() {
         switch (m_dialogState) {
             case DialogUXState::IDLE:
                 ConsolePrinter::prettyPrint("Alexa is currently idle!");
-    system("echo -n 'I' > /dev/serial/by-id/usb-Freetronics_Pty_Ltd_Leostick-if00");
+                system("echo -n 'I' > /dev/serial/by-id/usb-Freetronics_Pty_Ltd_Leostick-if00");
                 return;
             case DialogUXState::LISTENING:
                 ConsolePrinter::prettyPrint("Listening...");
-    system("echo -n 'L' > /dev/serial/by-id/usb-Freetronics_Pty_Ltd_Leostick-if00");
+                system("echo -n 'L' > /dev/serial/by-id/usb-Freetronics_Pty_Ltd_Leostick-if00");
                 return;
             case DialogUXState::EXPECTING:
                 ConsolePrinter::prettyPrint("Expecting...");
-    system("echo -n 'U' > /dev/serial/by-id/usb-Freetronics_Pty_Ltd_Leostick-if00");
+                system("echo -n 'U' > /dev/serial/by-id/usb-Freetronics_Pty_Ltd_Leostick-if00");
                 return;
             case DialogUXState::THINKING:
                 ConsolePrinter::prettyPrint("Thinking...");
-    system("echo -n 'T' > /dev/serial/by-id/usb-Freetronics_Pty_Ltd_Leostick-if00");
+                system("echo -n 'T' > /dev/serial/by-id/usb-Freetronics_Pty_Ltd_Leostick-if00");
                 return;
             case DialogUXState::SPEAKING:
                 ConsolePrinter::prettyPrint("Speaking...");
-    system("echo -n 'S' > /dev/serial/by-id/usb-Freetronics_Pty_Ltd_Leostick-if00");
+                system("echo -n 'S' > /dev/serial/by-id/usb-Freetronics_Pty_Ltd_Leostick-if00");
                 return;
             /*
              * This is an intermediate state after a SPEAK directive is completed. In the case of a speech burst the
@@ -1051,6 +744,7 @@ Ensure it's executable:
 chmod u+x arduino-read-serial-shutdown.sh
 ```
 
+Option 1: 
 Add a call to this script to the start of the "startsample.sh" script (note the trailing "&" after the call sends to the background).
 Here is the modified "startsample.sh" script with the added call to "arduino-read-serial-shutdown.sh":
 
@@ -1063,7 +757,7 @@ cd "/home/pi/build/SampleApp/src"
 
 ```
 
-Alternativly you can configure this script to be another service that starts at an earlier stage, which is what I've now done
+Option 2: Alternativly you can configure this script to be another service that starts at an earlier stage, which is what I've now done
 on my setup as I was tinkering with my WiFi settings on the Pi and go into an invalid state where I could not login to perform
 a safe shutdown, therefore I had to do an unsafe shutdown by pulling the power. If you have a standalone service you can perform
 a safe shutdown regardless of being connected to a WiFi network.
@@ -1097,7 +791,6 @@ The following guide has been adapted to use boost communicating with an arduino 
 
 NOTE: I decided to go with simple system shell calls to read and write to the serial port instead of the boost serial 
 communication... so cutting this section short for now.
-
 
 
 APPENDIX ~/.asoundrc config for a usb speak + mic combination:
