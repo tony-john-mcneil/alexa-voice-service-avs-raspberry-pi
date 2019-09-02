@@ -646,6 +646,7 @@ Here is a related issue that's been logged: https://github.com/alexa/avs-device-
 You have 2 options:
 
 Option 1: Follow instructions for renewing the development licence here: https://github.com/Sensory/alexa-rpi#license
+
 Option 2: Try the KITT.ai build instructions here: https://github.com/alexa/avs-device-sdk/wiki/Build-Options#kittai
 
 
