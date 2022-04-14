@@ -59,7 +59,7 @@ umount /dev/sdX2
 Write the image to sdcard NOTE: use "sdX" from above without the numbers for the partitions
 
 ```
-sudo dd bs=4M if=2018-11-13-raspbian-stretch-lite.img of=/dev/sdX
+sudo dd if=2018-11-13-raspbian-stretch-lite.img of=/dev/sdX bs=4M conv=fsync status=progress
 ```
 
 Store example output for future checks and balances checking:
@@ -200,7 +200,7 @@ sudo umount /media/t/rootfs
 Make a backup (this will take a while):
 
 ```sh
-sudo dd bs=4M if=/dev/sdX | gzip > ~/Projects/AWS/AlexaVoiceServicePi/backup-image-`date +%Y%m%d%H%M`.gz
+sudo bs=4M if=/dev/sdX | gzip > ~/Projects/AWS/AlexaVoiceServicePi/backup-image-`date +%Y%m%d%H%M`.gz
 ```
 
 No output can make you nervous the longer the process takes so you can try adding the status=progress param to the dd command.
@@ -218,10 +218,10 @@ _you can also monitor the current disk usage with 'df -h ~/Projects/AWS/AlexaVoi
 If you ever need to restore the backup the command will be (replace YYYYMMDDHHMI with your particular backup files date):
 
 ```sh
-sudo gzip -dc ~/Projects/AWS/AlexaVoiceServicePi/backup-image-YYYYMMDDHHMI.gz | sudo dd bs=4M of=/dev/sdX
+sudo gzip -dc ~/Projects/AWS/AlexaVoiceServicePi/backup-image-YYYYMMDDHHMI.gz | sudo dd bs=4M of=/dev/sdX conv=fsync status=progress
 ```
 
-_Depending on your system the dd command will have options to show progress, on ubuntu 18.04 it's "status=progress". This
+_Depending on your system the dd command may or may not have options to show progress, on ubuntu 18.04 it's "status=progress". This
 may differ on your system_
 
 ## Perform installs of extra software + build project
